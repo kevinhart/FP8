@@ -1,6 +1,6 @@
 -- | Lambda Calculus, implemented using a 'State' monad.
 module MLambda (
--- | State monad
+-- * State monad
   State
 , apply
 , getState
