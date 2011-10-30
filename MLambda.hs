@@ -7,6 +7,8 @@ module MLambda (
 , putState
 ) where
 
+import Lambda hiding (alpha, beta)
+
 -- | @State@ is a state monad which wraps a computation affecting a state
 data State s a = State (s -> (a, s))
 
@@ -28,3 +30,39 @@ instance Monad (State s) where
   State m >>= f = State (\c -> case m c of
     (a, astate) -> case f a of
       State n -> n astate)
+
+-- | @do uexpr <- alpha expr@ attaches unique numbers to all names in an
+-- s-expression; positive exactly if the name is bound to a parameter.
+--
+-- >>> apply (alpha (read "(lambda ('x') ('x' 'y'))" :: SExpr Char)) ([],0)
+-- (lambda ((1,'x')) ((1,'x') (0,'y')))
+alpha :: (Num n, Eq a) => SExpr a -> State ([((n,a), (n,a))], n) (SExpr (n, a))
+alpha = alpha' . wrap
+
+alpha' :: (Num n, Eq a) => SExpr (n, a) ->
+                           State ([((n,a), (n,a))], n) (SExpr (n,a))
+alpha' (Proc parm@(_,name) body) = do
+  (stack, uniq) <- getState
+  let parm' = (uniq+1, name)
+  putState (((parm, parm'):stack), uniq+1)
+  body' <- alpha' body
+  return (Proc parm' body')
+
+alpha' var@(Name name) = do
+  (stack, uniq) <- getState
+  case filter ((name ==).fst) stack of
+    (_, parm):_ -> return (Name parm) -- bound variable
+    _           -> return var         -- free variable
+
+alpha' (Call proc arg) = do
+  (stack, uniq) <- getState
+  proc' <- alpha' proc
+  arg'  <- alpha' arg
+  return (Call proc' arg')
+
+-- | @unalpha uexpr@ reverses the effect of alpha, i.i., removes the unique
+-- numbers which 'alpha' attaches to all names in an s-expression
+-- >>> unalpha (alpha (read "(lambda ('x') ('x' 'y'))" :: SExpr Char))
+-- (lambda ('x') ('x' 'y'))
+unalpha :: Num n => State ([a], n) (SExpr (b, c)) -> SExpr c
+unalpha = unwrap . ((flip$apply) ([],0))
