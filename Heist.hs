@@ -22,6 +22,8 @@ numItems = 100
 maxWeight :: Int
 maxWeight = 30
 
+-- Doesn't update the global random number generator, so repeated calls will
+-- return the same result until the global RNG gets changed.
 randomHeist :: (Num b, Random b) => IO b
 randomHeist = do gen <- getStdGen
                  return $ randomHeistGen gen
