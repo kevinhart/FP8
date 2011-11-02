@@ -1,0 +1,11 @@
+Assignment 8
+
+Matt MacEwan
+Kevin Hart
+
+--
+
+The heist implementation uses the same method as the solution for the "lucky
+lenny" dynamic programming problem and uses the definition of the knapsack
+problem's recurrence relation as provided by Wikipedia (though other sources
+confirm the definition of the relation).
