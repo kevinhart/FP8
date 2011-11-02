@@ -23,11 +23,11 @@ heist ws vs maxw = table ! (len-1, maxw)
                       weight = ws!!i
                       value = vs!!i
                     in
-                      if weight > maxw
-                      then
-                        table!(i-1,j)
-                      else
-                        max (table!(i-1,j)) (table!(i-1,maxw-weight) + value)
+                      if weight > j
+                        then
+                          table!(i-1,j)
+                        else
+                          max (table!(i-1,j)) (table!(i-1,(j-weight)) + value)
 
 -- Properties of the random tester
 weightBounds :: (Num a, Random a) => (a, a)
