@@ -10,7 +10,6 @@ import Data.Array
 
 -- | @heist weights values max_weight@ returns the maximum value of the heist
 --heist :: (Ix a, Enum a, Num a, Num b) => [a] -> [b] -> a -> b
--- fake implementation
 heist ws vs maxw = table ! (len-1, maxw)
   where
     len = length ws
