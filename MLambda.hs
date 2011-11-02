@@ -5,6 +5,10 @@ module MLambda (
 , apply
 , getState
 , putState
+-- * Lambda Calculus functions
+, alpha
+, unalpha
+, beta
 ) where
 
 import Lambda hiding (alpha, beta)
@@ -46,6 +50,8 @@ alpha' (Proc parm@(_,name) body) = do
   let parm' = (uniq+1, name)
   putState (((parm, parm'):stack), uniq+1)
   body' <- alpha' body
+  (_, uniq') <- getState    -- pop (parm, parm') off the stack before going
+  putState (stack, uniq')   -- up a level, but save uniq'
   return (Proc parm' body')
 
 alpha' var@(Name name) = do
@@ -60,9 +66,48 @@ alpha' (Call proc arg) = do
   arg'  <- alpha' arg
   return (Call proc' arg')
 
--- | @unalpha uexpr@ reverses the effect of alpha, i.i., removes the unique
+-- | @unalpha uexpr@ reverses the effect of alpha, i.e., removes the unique
 -- numbers which 'alpha' attaches to all names in an s-expression
 -- >>> unalpha (alpha (read "(lambda ('x') ('x' 'y'))" :: SExpr Char))
 -- (lambda ('x') ('x' 'y'))
 unalpha :: Num n => State ([a], n) (SExpr (b, c)) -> SExpr c
 unalpha = unwrap . ((flip$apply) ([],0))
+
+-- | @beta expr@ reduces an s-expression by applying a procedure to an argument
+-- until nothing changes.  Uses structural induction on the s-expression.
+-- Performs an 'alpha' conversion first and whenever an argument is substituted.
+-- >>> beta (read "(((lambda ('x') (lambda ('y') 'x')) 'y') 'f')" :: SExpr Char)
+-- 'y'
+beta :: Eq a => SExpr a -> SExpr a
+beta expr = unalpha $ do
+  subbed <- alpha expr
+  loop subbed where
+  
+    -- reduce until nothing changes anymore
+    loop expr = do
+      expr' <- beta' expr
+      if expr' == expr then return expr else loop expr'
+
+    beta' var@(Name _)    = return var
+    beta' proc@(Proc _ _) = return proc
+    beta' (Call proc arg) = do
+      expr <- beta' proc
+      case expr of
+        Proc parm body -> subst parm arg body
+	exprr          -> return (Call exprr arg)
+
+    -- structural induction to substitute arg for parm
+    subst parm arg = subst' where
+      subst' var@(Name name)
+        | name == parm  = do
+	    (_, uniq) <- getState
+	    putState ([], uniq)  -- perform sub-alpha with empty stack
+	    alpha' arg
+	| otherwise     = return var
+      subst' (Proc parm body) = do
+        body' <- subst' body
+	return (Proc parm body')
+      subst' (Call proc arg)  = do
+        proc' <- subst' proc
+	arg'  <- subst' arg
+	return (Call proc' arg')
