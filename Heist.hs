@@ -6,12 +6,28 @@ module Heist
 ) where
 
 import System.Random
+import Data.Array
 
 -- | @heist weights values max_weight@ returns the maximum value of the heist
-heist :: (Num a, Num b) => [a] -> [b] -> a -> b
+--heist :: (Ix a, Enum a, Num a, Num b) => [a] -> [b] -> a -> b
 -- fake implementation
-heist _ []     _ = 0
-heist _ (b:bs) _ = b
+heist ws vs maxw = table ! (len-1, maxw)
+  where
+    len = length ws
+    table = array ((0, 0), (len-1, maxw))
+               -- for (0,_) or (_,0) the maximum value is 0
+              ([((0,x), 0) | x <- [0..maxw]] ++
+               [((x,0), 0) | x <- [0..len-1]] ++
+               [((i,j), cellvalue i j) | i <- [1..len-1], j <- [1..maxw]])
+    cellvalue i j = let
+                      weight = ws!!i
+                      value = vs!!i
+                    in
+                      if weight > maxw
+                      then
+                        table!(i-1,j)
+                      else
+                        max (table!(i-1,j)) (table!(i-1,maxw-weight) + value)
 
 -- Properties of the random tester
 weightBounds :: (Num a, Random a) => (a, a)
@@ -24,14 +40,14 @@ maxWeight = 30
 
 -- Doesn't update the global random number generator, so repeated calls will
 -- return the same result until the global RNG gets changed.
-randomHeist :: (Num b, Random b) => IO b
+randomHeist :: (Num b, Ord b, Random b) => IO b
 randomHeist = do gen <- getStdGen
                  return $ randomHeistGen gen
 
-randomHeistSeed :: (Num b, Random b) => Int -> b
+randomHeistSeed :: (Num b, Ord b, Random b) => Int -> b
 randomHeistSeed seed = randomHeistGen (mkStdGen seed)
 
-randomHeistGen :: (RandomGen g, Num b, Random b) => g -> b
+randomHeistGen :: (RandomGen g, Num b, Ord b, Random b) => g -> b
 randomHeistGen gen = heist weights values maxWeight where
   (weights, values) = unzip $ (take numItems) (itemPairs gen)
 
