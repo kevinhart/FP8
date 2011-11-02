@@ -4,3 +4,7 @@ Matthew MacEwan & Kevin Hart
 Reflecting the supplied documentation, the monadic lambda calculus functions live in MLambda.hs.  We based our implementation on your original solution to homework 6.  All the examples in Lambda.hs work, though the recursion example takes a few seconds to complete.
 
 Heist.hs contains the heist function and some random testing helpers.  There are three flavors: one that accepts a RandomGen, one that accepts a seed which it uses (with mkStdGen) to create a RandomGen, and one that uses the global random number generator in the IO monad.  Note that the final flavor does not update the global RNG, so repeated calls will return the same result.
+The heist implementation uses the same method as the solution for the "lucky
+lenny" dynamic programming problem and uses the definition of the knapsack
+problem's recurrence relation as provided by Wikipedia (though other sources
+confirm the definition of the relation).
